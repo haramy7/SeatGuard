@@ -4,17 +4,14 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 public class FirebaseConfig {
-
-    @Value("${fcm.config-path}")
-    private String firebaseConfigPath;
 
     @PostConstruct
     public void initialize() {
@@ -22,7 +19,20 @@ public class FirebaseConfig {
             if (!FirebaseApp.getApps().isEmpty()) {
                 return;
             }
-            InputStream serviceAccount = new ClassPathResource("firebase-service-account.json").getInputStream();
+
+            String firebaseCredentials = System.getenv("FIREBASE_CREDENTIALS");
+            InputStream serviceAccount;
+
+            if (firebaseCredentials != null && !firebaseCredentials.isEmpty()) {
+                serviceAccount = new ByteArrayInputStream(firebaseCredentials.getBytes(StandardCharsets.UTF_8));
+            } else {
+                serviceAccount = getClass().getClassLoader().getResourceAsStream("firebase-service-account.json");
+            }
+
+            if (serviceAccount == null) {
+                System.out.println("Firebase 설정 없음 - FCM 비활성화");
+                return;
+            }
 
             FirebaseOptions options = FirebaseOptions.builder()
                     .setCredentials(GoogleCredentials.fromStream(serviceAccount))
@@ -32,9 +42,7 @@ public class FirebaseConfig {
             System.out.println("Firebase Connection Established");
 
         } catch (Exception e) {
-            e.printStackTrace();
-            // 키 파일 없으면 서버 죽는 게 낫다...
-            throw new RuntimeException("Firebase 초기화 실패. JSON 파일 위치 확인해라.");
+            System.out.println("Firebase 초기화 실패 - FCM 비활성화: " + e.getMessage());
         }
     }
 }
