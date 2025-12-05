@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:8090}
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${PGHOST:localhost}:${PGPORT:5440}/${PGDATABASE:seatguard}
+    username: ${PGUSER:postgres}
+    password: ${PGPASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: false
+  thymeleaf:
+    cache: false
+
+fcm:
+  config-path: ${FCM_CONFIG_PATH:classpath:firebase-service-account.json}
+
+logging:
+  level:
+    root: INFO

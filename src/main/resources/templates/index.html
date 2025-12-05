@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeatGuard</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="page-wrap">
+        <div class="status-scene">
+            <div class="presence-ring"></div>
+            
+            <h1 class="status-label" id="statusText">자리에 있습니다</h1>
+            <p class="status-time" id="timeDisplay">0분 전 활동</p>
+            
+            <div class="status-actions">
+                <button id="btnAway" class="btn">잠시 자리 비움</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/seatguard.js"></script>
+</body>
+</html>

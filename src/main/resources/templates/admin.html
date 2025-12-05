@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeatGuard - 대시보드</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="dashboard">
+        <header class="dash-header">
+            <h1 class="dash-title">출석 현황</h1>
+            <div class="dash-controls">
+                <span class="noti-badge" id="notiStatus">알림 연결 중...</span>
+                <button id="btnEnableNoti" class="btn btn-sm">알림 받기</button>
+                <a href="/logout" class="btn btn-sm">로그아웃</a>
+            </div>
+        </header>
+
+        <div class="member-grid" id="userGrid">
+            <div class="empty-state">데이터를 불러오는 중...</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCz3QIK51dRJxF6KodEqJ7yhh_4lI1reos",
+            authDomain: "seatguard-e1ffe.firebaseapp.com",
+            projectId: "seatguard-e1ffe",
+            storageBucket: "seatguard-e1ffe.firebasestorage.app",
+            messagingSenderId: "182765965666",
+            appId: "1:182765965666:web:03d7210d1c5f5e1f5bdc3b",
+            measurementId: "G-3LFL80GCQC"
+        };
+
+        const vapidKey = "BM84-oG76wxyN0Yo9m06gmXe8L_ODDUyxWlq9uXy8zO0hwfxpYyUPw0IxIlZaaqYMM7RK_K5wtdgn4uP7lxy5EM"; 
+
+        try {
+            const app = initializeApp(firebaseConfig);
+            const messaging = getMessaging(app);
+            
+            const btn = document.getElementById('btnEnableNoti');
+            const status = document.getElementById('notiStatus');
+
+            if (Notification.permission === 'granted') {
+                btn.style.display = 'none';
+                status.innerText = "알림 연결됨";
+                connectToFcm(); 
+            } else if (Notification.permission === 'denied') {
+                status.innerText = "알림이 차단되어 있습니다";
+            }
+
+            btn.addEventListener('click', () => {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        btn.style.display = 'none';
+                        status.innerText = "알림 연결됨";
+                        connectToFcm();
+                    } else {
+                        status.innerText = "알림 권한이 거부됨";
+                    }
+                });
+            });
+
+            function connectToFcm() {
+                getToken(messaging, { vapidKey: vapidKey }).then((currentToken) => {
+                    if (currentToken) {
+                        fetch('/api/fcm/token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token: currentToken })
+                        });
+                    }
+                }).catch((err) => {
+                    console.error('Token Error:', err);
+                    status.innerText = "알림 연결 실패";
+                });
+            }
+
+            onMessage(messaging, (payload) => {
+                new Notification(payload.notification.title, {
+                    body: payload.notification.body,
+                    icon: '/favicon.png'
+                });
+            });
+
+        } catch(e) {
+            console.error("Firebase Init Error:", e);
+        }
+
+        function formatTime(dateStr) {
+            if (!dateStr) return '-';
+            const d = new Date(dateStr);
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            const hour = String(d.getHours()).padStart(2, '0');
+            const min = String(d.getMinutes()).padStart(2, '0');
+            return `${month}/${day} ${hour}:${min}`;
+        }
+
+        function getStatusLabel(status) {
+            switch(status) {
+                case 'IN': return '자리에 있음';
+                case 'AWAY': return '자리 비움';
+                case 'DANGER': return '장기 이석 중';
+                default: return status;
+            }
+        }
+
+        function loadDashboard() {
+            fetch('/api/admin/dashboard')
+                .then(res => {
+                    if (res.status === 403) window.location.href = '/';
+                    return res.json();
+                })
+                .then(data => {
+                    const grid = document.getElementById('userGrid');
+                    grid.innerHTML = '';
+                    
+                    if (data.length === 0) {
+                        grid.innerHTML = '<div class="empty-state">현재 접속 중인 인원이 없습니다</div>';
+                        return;
+                    }
+                    
+                    data.forEach(u => {
+                        const card = document.createElement('div');
+                        card.className = `member-card card-${u.status}`;
+                        card.innerHTML = `
+                            <div class="member-header">
+                                <span class="member-dot"></span>
+                                <span class="member-name">${u.name}</span>
+                            </div>
+                            <p class="member-status">${getStatusLabel(u.status)}</p>
+                            <p class="member-time">${formatTime(u.lastChange)}</p>
+                        `;
+                        grid.appendChild(card);
+                    });
+                });
+        }
+        
+        setInterval(loadDashboard, 3000);
+        loadDashboard();
+    </script>
+</body>
+</html>
