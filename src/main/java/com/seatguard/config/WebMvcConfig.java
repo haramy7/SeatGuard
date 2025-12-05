@@ -20,7 +20,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                         "/login", "/signup", "/logout",
                         "/css/**", "/js/**", "/favicon.png", "/error",
                         "/api/status", "/api/fcm/token",
-                        "/firebase-messaging-sw.js"
+                        "/firebase-messaging-sw.js",
+                        "/health"
                 );
     }
 }
