@@ -1,2 +1,11 @@
-src/main/resources/firebase-service-account.json
 target/
+*.class
+*.jar
+*.log
+.DS_Store
+.idea/
+*.iml
+.vscode/
+application-local.yml
+firebase-service-account.json
+src/main/resources/firebase-service-account.json
